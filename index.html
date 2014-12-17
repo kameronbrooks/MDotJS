@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script src="mod.js"></script>
+
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+
+<canvas id="canvas1" width="32px" height="32px"></canvas>
+
+<script>
+
+    $canvas = document.getElementById('canvas1');
+    $context = $canvas.getContext('2d');
+    $imageData = $context.createImageData(32,32);
+
+	$m.init();
+
+    ;
+    var a, b, index;
+    for(a = 0; a<32;a+=1) {
+        for(b = 0; b<32;b+=1) {
+            index = (a * 32 + b) * 4;
+            $imageData.data[index] = (b/32.0) * 200;
+            $imageData.data[index+1] = (a/32.0) * 200;
+            $imageData.data[index+2] = 0;
+            $imageData.data[index+3] = 255;
+        }
+    }
+
+    var mat = new DataMatrix([],[]);
+    mat.fromImageData($imageData);
+
+    var vec4 = new Vec4(0,255,255,255);
+    mat.setData(0,0,1,255);
+    mat.setData(1,31,1,255);
+    mat.setData(31,31,vec4);
+
+    mat.toImageData($imageData);
+
+    $context.putImageData($imageData,0,0);
+
+
+
+</script>
+</body>
+</html>
