@@ -559,6 +559,7 @@ function Module(name, func, x, y) {
     this._name = name;
     this._inputs = [];
     this._outputs = [];
+    this._isCompiled = false;
     this._func = function() {
         return 0;
     }
@@ -598,8 +599,12 @@ function Module(name, func, x, y) {
 
     this.body = document.createElement("div");
     this.body.id = "body";
-    this.body.contentEditable = "true";
+    //this.body.contentEditable = "true";
     this.element.appendChild(this.body);
+
+    this.scriptArea = document.createElement("textarea");
+    this.scriptArea.id = "scriptArea";
+    this.body.appendChild(this.scriptArea);
 
     this.outputDiv = document.createElement("div");
     this.outputDiv.innerHTML = ">";
@@ -668,18 +673,20 @@ function Module(name, func, x, y) {
     this.killButton.addEventListener("click", function(e) {
         self.element.style.visibility = "hidden";
     });
-    this.body.addEventListener("keyup", function(e) {
+    this.scriptArea.addEventListener("keyup", function(e) {
+
         if(e.keyCode == 18) {
+
             self.generateFunction();
             self.run();
             e.preventDefault();
             return false;
         } else {
+            self.scriptArea.style.border = "1px solid rgba(255,100,100, 0.9)";
+            self._isCompiled = false;
             return true;
         }
-
     })
-
 }
 Module.prototype.getName = function() {
     return this._name;
@@ -745,17 +752,17 @@ Module.prototype.generateOutputObject = function() {
     return $out;
 }
 Module.prototype.generateFunction = function() {
-    var functionBody = this.body.innerHTML;
-
-    functionBody = functionBody.replace(/<\/?br\/?>/g,"");
-    functionBody = functionBody.replace(/&nbsp;/g,"");
+    var functionBody = this.scriptArea.value;
 
     functionBody = "var $in = $self.generateInputObject(); var $out = $self.generateOutputObject();"+functionBody+" ;return $out;";
     try {
         this._func = Function('$self',functionBody);
+        this._isCompiled = true;
+        this.scriptArea.style.border = "1px solid rgba(100,100,100, 0.5)";
     } catch (err) {
         console.error("Error in Module '"+this._name+"' : "+err.message);
     }
+
 
 
 }
@@ -774,15 +781,11 @@ Module.prototype.run = function() {
                 value = result[this._outputs[i].getName()];
 
                 this._outputs[i].setValue(value);
-
-
             }
         }
     } catch (err) {
         console.error("Error in Module '"+this._name+"' : "+err.message);
     }
-
-
 }
 
 Module.prototype.addInput = function(name,type,value) {
@@ -1001,6 +1004,42 @@ function ModuleContextMenu() {
     this.addFloatOutElement.addEventListener("click", function (e){
         self.addOutput('float');
     });
+    this.addVec2InElement = document.createElement('div');
+    this.addVec2InElement.innerHTML = "Add vec2 input";
+    this.element.appendChild(this.addVec2InElement);
+    this.addVec2InElement.addEventListener("click", function (e){
+        self.addInput('vec2');
+    });
+    this.addVec2OutElement = document.createElement('div');
+    this.addVec2OutElement.innerHTML = "Add vec2 output";
+    this.element.appendChild(this.addVec2OutElement);
+    this.addVec2OutElement.addEventListener("click", function (e){
+        self.addOutput('vec2');
+    });
+    this.addVec3InElement = document.createElement('div');
+    this.addVec3InElement.innerHTML = "Add vec3 input";
+    this.element.appendChild(this.addVec3InElement);
+    this.addVec3InElement.addEventListener("click", function (e){
+        self.addInput('vec3');
+    });
+    this.addVec3OutElement = document.createElement('div');
+    this.addVec3OutElement.innerHTML = "Add vec3 output";
+    this.element.appendChild(this.addVec3OutElement);
+    this.addVec3OutElement.addEventListener("click", function (e){
+        self.addOutput('vec3');
+    });
+    this.addVec4InElement = document.createElement('div');
+    this.addVec4InElement.innerHTML = "Add vec4 input";
+    this.element.appendChild(this.addVec4InElement);
+    this.addVec4InElement.addEventListener("click", function (e){
+        self.addInput('vec4');
+    });
+    this.addVec4OutElement = document.createElement('div');
+    this.addVec4OutElement.innerHTML = "Add vec4 output";
+    this.element.appendChild(this.addVec4OutElement);
+    this.addVec4OutElement.addEventListener("click", function (e){
+        self.addOutput('vec4');
+    });
 
 }
 
@@ -1012,11 +1051,11 @@ ModuleContextMenu.prototype.addInput = function (type) {
     } else if(type == 'float' ) {
         this._currentModule.addInput('f',type,'0');
     } else if(type == 'vec2' ) {
-
+        this._currentModule.addInput('v2',type,new Vec2());
     } else if(type == 'vec3' ) {
-
+        this._currentModule.addInput('v3',type,new Vec3());
     } else if(type == 'vec4' ) {
-
+        this._currentModule.addInput('v4',type,new Vec4());
     }
 }
 ModuleContextMenu.prototype.addOutput = function (type) {
@@ -1027,11 +1066,11 @@ ModuleContextMenu.prototype.addOutput = function (type) {
     } else if(type == 'float' ) {
         this._currentModule.addOutput('f',type,'0');
     } else if(type == 'vec2' ) {
-
+        this._currentModule.addOutput('v2',type,new Vec2());
     } else if(type == 'vec3' ) {
-
+        this._currentModule.addOutput('v3',type,new Vec3());
     } else if(type == 'vec4' ) {
-
+        this._currentModule.addOutput('v4',type,new Vec4());
     }
 }
 
@@ -1051,26 +1090,44 @@ ModuleContextMenu.prototype.handleOpenType = function(type) {
         this.addBoolInElement.style.display = "block";
         this.addIntInElement.style.display = "block";
         this.addFloatInElement.style.display = "block";
+        this.addVec2InElement.style.display = "block";
+        this.addVec3InElement.style.display = "block";
+        this.addVec4InElement.style.display = "block";
 
         this.addBoolOutElement.style.display = "none";
         this.addIntOutElement.style.display = "none";
         this.addFloatOutElement.style.display = "none";
+        this.addVec2OutElement.style.display = "none";
+        this.addVec3OutElement.style.display = "none";
+        this.addVec4OutElement.style.display = "none";
     } else if (type == "output") {
         this.addBoolInElement.style.display = "none";
         this.addIntInElement.style.display = "none";
         this.addFloatInElement.style.display = "none";
+        this.addVec2InElement.style.display = "none";
+        this.addVec3InElement.style.display = "none";
+        this.addVec4InElement.style.display = "none";
 
         this.addBoolOutElement.style.display = "block";
         this.addIntOutElement.style.display = "block";
         this.addFloatOutElement.style.display = "block";
+        this.addVec2OutElement.style.display = "block";
+        this.addVec3OutElement.style.display = "block";
+        this.addVec4OutElement.style.display = "block";
     } else if(type == "body") {
         this.addBoolInElement.style.display = "none";
         this.addIntInElement.style.display= "none";
         this.addFloatInElement.style.display = "none";
+        this.addVec2InElement.style.display = "none";
+        this.addVec3InElement.style.display = "none";
+        this.addVec4InElement.style.display = "none";
 
         this.addBoolOutElement.style.display = "none";
         this.addIntOutElement.style.display = "none";
         this.addFloatOutElement.style.display = "none";
+        this.addVec2OutElement.style.display = "none";
+        this.addVec3OutElement.style.display = "none";
+        this.addVec4OutElement.style.display = "none";
     } else {
 
     }
