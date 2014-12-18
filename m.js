@@ -15,12 +15,42 @@
 function Variable(name, value, type) {
 	
 }
+/**==================================================
+ *                  Vec2
+ ====================================================*/
+
+function Vector() {
+    this.length = 0;
+}
+Vector.prototype.getMagnitude = function() {
+    var i=0;
+    var mag = 0;
+    for(i=0;i<this.length;i+=1) {
+        mag += this[i] * this[i];
+    }
+    return Math.sqrt(mag);
+}
+Vector.prototype.normailze = function() {
+    var i=0;
+    var mag = this.getMagnitude();
+    for(i=0;i<this.length;i+=1) {
+        this[i] = this[i] / mag;
+    }
+}
+Vector.prototype.copyTo = function(v2) {
+    var i=0;
+    for(i=0;i<this.length;i+=1) {
+        v2[i] = this[i];
+        v2.length = this.length;
+    }
+}
 
 /**==================================================
  *                  Vec2
  ====================================================*/
 
 function Vec2(x,y){
+    Vector.call(this);
     this.length = 2;
     var i = 0;
     var count = this.length;
@@ -34,11 +64,28 @@ function Vec2(x,y){
 
 }
 
+Vec2.prototype = Object.create(Vector.prototype);
+Vec2.prototype.constructor = Vec2;
+
+Vec2.prototype.copy = function() {
+    if(arguments[0] !== undefined) {
+        if(arguments[0] instanceof Vec2) {
+            this.copyTo(arguments[0]);
+        } else {
+            return undefined;
+        }
+
+    } else {
+        return new Vec2(this[0],this[1]);
+    }
+}
+
 /**==================================================
  *                  Vec3
  ====================================================*/
 
 function Vec3() {
+    Vector.call(this);
     this.length = 3;
     var i = 0;
     var count = this.length;
@@ -52,11 +99,28 @@ function Vec3() {
 
 }
 
+Vec3.prototype = Object.create(Vector.prototype);
+Vec3.prototype.constructor = Vec3;
+
+Vec3.prototype.copy = function() {
+    if(arguments[0] !== undefined) {
+        if(arguments[0] instanceof Vec3) {
+            this.copyTo(arguments[0]);
+        } else {
+            return undefined;
+        }
+
+    } else {
+        return new Vec3(this[0],this[1],this[2]);
+    }
+}
+
 /**==================================================
  *                  Vec4
  ====================================================*/
 
 function Vec4() {
+    Vector.call(this);
     this.length = 4;
     var i = 0;
     var count = this.length;
@@ -68,6 +132,22 @@ function Vec4() {
         }
     }
 
+}
+
+Vec4.prototype = Object.create(Vector.prototype);
+Vec4.prototype.constructor = Vec4;
+
+Vec4.prototype.copy = function() {
+    if(arguments[0] !== undefined) {
+        if(arguments[0] instanceof Vec4) {
+            this.copyTo(arguments[0]);
+        } else {
+            return undefined;
+        }
+
+    } else {
+        return new Vec4(this[0],this[1],this[2],this[3]);
+    }
 }
 
 /**==================================================
@@ -380,7 +460,15 @@ Port.prototype.setValue = function(value) {
         }
         this._value = !!(+value);
     } else {
-        this._value = value;
+        var i;
+        if(this._value.length !== undefined && value.length !== undefined) {
+            for(i=0;i<value.length;i+=1) {
+                this._value[i] = parseFloat(value[i]);
+            }
+        } else {
+            this._value = value;
+        }
+
     }
 
     if(this._updateParentOnChange) {
@@ -630,7 +718,7 @@ Module.prototype.generateInputObject = function() {
         } else if(type == 'bool') {
             $in[name] = !!(this._inputs[i].getValue());
         } else {
-
+            $in[name] = this._inputs[i].getValue();
         }
 
     }
@@ -650,7 +738,7 @@ Module.prototype.generateOutputObject = function() {
         } else if(type == 'bool') {
             $out[name] = !!(this._outputs[i].getValue());
         } else {
-
+            $out[name] = this._inputs[i].getValue();
         }
 
     }
@@ -790,11 +878,26 @@ PortContextMenu.prototype.setPort = function (port) {
     this.nameElement.value = port.getName();
 }
 PortContextMenu.prototype.open = function (x,y,port) {
+    var value = null;
+    var i =0;
     this._currentPort = port;
     this.element.style.visibility = "visible";
 
     this.nameElement.value= port.getName();
-    this.valueElement.value = port.getValue();
+
+    value = port.getValue();
+
+    if(value.length !== undefined) {
+        this.valueElement.value = '';
+        for(i=0;i<value.length;i+=1) {
+            if(i>0) {this.valueElement.value += ','};
+            this.valueElement.value += value[i];
+        }
+    } else {
+        this.valueElement.value = port.getValue();
+    }
+
+
 
     this.element.style.left = x+"px";
     this.element.style.top = y+"px";
@@ -807,7 +910,19 @@ PortContextMenu.prototype.updateName = function () {
     this._currentPort.setName(this.nameElement.value);
 }
 PortContextMenu.prototype.updateValue = function () {
-    this._currentPort.setValue(this.valueElement.value);
+    var value = null;
+    var i =0;
+    value = this._currentPort.getValue();
+    if(value.length !== undefined) {
+        var arr = this.valueElement.value.split(/[, ]/);
+        for(i=0;i<arr.length;i+=1) {
+
+            this._currentPort.setValue(arr);
+        }
+    } else {
+        this._currentPort.setValue(this.valueElement.value);
+    }
+
 }
 
 /**===================================================
